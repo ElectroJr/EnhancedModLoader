@@ -1,18 +1,10 @@
 ﻿using System.Runtime.InteropServices;
-using System.Reflection;
 using Cosmoteer.Gui;
 using Halfling;
 using Cosmoteer;
 using System.Runtime.CompilerServices;
 using Halfling.Application;
-using static System.Net.Mime.MediaTypeNames;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.Window;
 using Application = System.Windows.Forms.Application;
-using System.Numerics;
-using Cosmoteer.Mods;
-using Halfling.IO;
-using Microsoft.VisualBasic;
-using System.IO;
 
 [assembly: IgnoresAccessChecksTo("Cosmoteer")]
 

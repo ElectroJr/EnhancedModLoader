@@ -1,3 +1,5 @@
+This is a fork of [C0dingschmuser's EnhancedModLoader](https://github.com/C0dingschmuser/EnhancedModLoader), updated to work with the new versions of cosmoteer that use .net 9
+
 # EnhancedModLoader for Cosmoteer
 ### Automatically loads c# mod dlls from Steam Workshop Mods - Integrates with ingame mod manager.
 
@@ -5,17 +7,19 @@
 :----------------------------------------------------------: |
 
 ### --- Installation ---
-1. Subscribe to this Mod on the [Steam Workshop](https://steamcommunity.com/sharedfiles/filedetails/?id=2937901869)  
+1. Subscribe to this Mod on the [Steam Workshop](https://steamcommunity.com/sharedfiles/filedetails/?id=TODO)  
 2. Navigate to your Cosmoteer Workshop directory.  
-   Usually it's ```C:\Program Files (x86)\Steam\steamapps\workshop\content\799600\2937901869\```  
-   Note: ```799600 is the ID for Cosmoteer, 2937901869 is the ID for this Mod```
+   Usually it's ```C:\Program Files (x86)\Steam\steamapps\workshop\content\799600\TODO\```  
+   Note: ```799600 is the ID for Cosmoteer, TODO is the ID for this Mod```
 3. Run ```Installer.bat``` or install it manually by copying AVRT.dll from the Mod Folder to your Cosmoteer "Bin" path. This is the path where the Cosmoteer.exe lies.  
    Example: ```C:\Program Files (x86)\Steam\steamapps\common\Cosmoteer\Bin\```
 4. You're good to go! Now you can just subscribe to any Workshop EML Mod and it will load automatically  
 (if it's enabled in the ingame mod manager).  
 5. (Optional) You can also drop c# mod dlls into the ```Bin\EML_Mods``` folder to load them
+<!---
 6. (Optional) If you want to test if everything works you can subscribe to the [EML Test Mod](https://steamcommunity.com/sharedfiles/filedetails/?id=2937811110).
    This simple Mod will show a test window when you enter a new game.
+--->
 
 ### --- How it works ---
 
@@ -33,16 +37,13 @@ If your game crashes check the ```eml_log.txt``` file in the bin directory and m
 
 If you want to make your own c# mod dll, this will get you started:
 
-**IMPORTANT INFORMATION: Cosmoteer uses .NET 7. Because of this, you cannot use Harmony since it does not Support .NET 7(yet).**  
-There is an [alpha version of Harmony](https://github.com/pardeike/Harmony/tree/feature/monomod-core) now that supports .NET 7 but you need to compile it yourself and i haven't tested it yet.
-
-- Use the [.NET 7 Version of EML](https://github.com/C0dingschmuser/EnhancedModLoader/releases) / Workshop version
+- Use the [.NET 9 Version of EML](https://github.com/C0dingschmuser/EnhancedModLoader/releases) / Workshop version
 - Use Visual Studio C# Class Library for .NET or .NET Standard Preset
-- Use target SDK 7.0.200 (Cosmoteer & EML both use this version), specify this in a global.json in your Project Directory. [See more](https://learn.microsoft.com/en-us/dotnet/core/tools/global-json)
-- Use Runtime Framework Version 7.0.3
+<!--- Use target SDK 7.0.200 (Cosmoteer & EML both use this version), specify this in a global.json in your Project Directory. [See more](https://learn.microsoft.com/en-us/dotnet/core/tools/global-json)-->
+- Use Runtime Framework Version 9.0.2
 - Change your .csproj TargetFramework to
 ```csproj
-<TargetFramework>net7.0-windows</TargetFramework>
+<TargetFramework>net9.0-windows</TargetFramework>
 ```
 - Allow Unsafe Blocks
 - Set GenerateRuntimeConfigurationFiles to true
@@ -55,7 +56,8 @@ Important:
 - Entry Point method **MUST** be static, named ```InitializePatches``` and have the ```[UnmanagedCallersOnly]``` attribute
 - Add Assembly References for Cosmoteer.dll and HalflingCore.dll from your Cosmoteer Bin Path  
   **- Under Properties, change Local copy to false for both**
-- Since most of the Cosmoteer namespace is private, you need an assembly publicizer. I'm using [kraf's Publicizer](https://github.com/krafs/Publicizer).  
+- Since most of the Cosmoteer namespace is private, you need an assembly publicizer. 
+<!-- I'm using [kraf's Publicizer](https://github.com/krafs/Publicizer).  
   kraf's Publicizer specific .csproj settings: (replace user with your username)
 ```csproj
 <ItemGroup>
@@ -65,7 +67,7 @@ Important:
   <Publicize Include="Cosmoteer" IncludeCompilerGeneratedMembers="false" />
   <Publicize Include="HalflingCore" IncludeCompilerGeneratedMembers="false" />
 </ItemGroup>
-```  
+```  -->
 - Add this to your .cs at the top:  
 ```csharp
 [assembly: IgnoresAccessChecksTo("Cosmoteer")]
@@ -86,9 +88,11 @@ namespace System.Runtime.CompilerServices
 }
 ```
 
+<!--
 Since we cannot use Harmony, there are some workarounds required to mod Cosmoteer.  
 Here's [a simple example](https://github.com/C0dingschmuser/EML_TestMod) on how to get a simple loop, keyboard detection and custom window up and running.  
 For more advanced use, see source of my [Weapon Projectile Spawner Mod](https://github.com/C0dingschmuser/ProjectileSpawner)
+-->
 
 ### --- License ---
 [Released under MIT License](https://github.com/C0dingschmuser/EnhancedModLoader/blob/master/LICENSE.txt)
