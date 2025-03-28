@@ -24,7 +24,7 @@ mono_crash.*
 [Rr]elease/
 [Rr]eleases/
 mod/*.dll
-mod/leave_this_folder_here
+mod/*.json
 x64/
 x86/
 [Ww][Ii][Nn]32/

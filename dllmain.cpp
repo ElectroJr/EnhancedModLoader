@@ -144,6 +144,71 @@ InitializeResult LoadDll(const char_t* runtime_config_path, const char_t* assemb
     hostfxr_close_fptr(ctx);
 }
 
+// Variant of LoadDll that exists specifically to load the harmony dll
+// I just want to ship a single harmony dll with the EML instead having each mod ship their own, and my shitty solution 
+// to resolving the harmony dll path is to just have it loaded when EML loads.
+// Though TBH I could probably have made this part of the EML_helper.dll. I.e., load from dotnet not here.
+InitializeResult LoadHarmony(const char_t* runtime_config_path, const char_t* assembly_path)
+{
+    /// Get module base address
+#ifdef _WIN32
+    auto libraryName = "hostfxr.dll";
+#else
+    auto libraryName = "libhostfxr.so";
+#endif
+    void* module = Module::getBaseAddress(libraryName);
+    if (!module)
+    {
+        return InitializeResult::HostFxrLoadError;
+    }
+
+    /// Obtaining useful exports
+    auto hostfxr_initialize_for_runtime_config_fptr =
+        Module::getFunctionByName<hostfxr_initialize_for_runtime_config_fn>(module, "hostfxr_initialize_for_runtime_config");
+
+    auto hostfxr_get_runtime_delegate_fptr =
+        Module::getFunctionByName<hostfxr_get_runtime_delegate_fn>(module, "hostfxr_get_runtime_delegate");
+
+    auto hostfxr_close_fptr =
+        Module::getFunctionByName<hostfxr_close_fn>(module, "hostfxr_close");
+
+    /// Load runtime config
+    hostfxr_handle ctx = nullptr;
+    int rc = hostfxr_initialize_for_runtime_config_fptr(runtime_config_path, nullptr, &ctx);
+
+    /// Success_HostAlreadyInitialized = 0x00000001
+    /// @see https://github.com/dotnet/runtime/blob/main/docs/design/features/host-error-codes.md
+    if (rc != 1 || ctx == nullptr)
+    {
+        hostfxr_close_fptr(ctx);
+        return InitializeResult::InitializeRuntimeConfigError;
+    }
+
+    /// From docs: native function pointer to the requested runtime functionality
+    void* delegate = nullptr;
+    int ret = hostfxr_get_runtime_delegate_fptr(ctx, hostfxr_delegate_type::hdt_load_assembly,
+        &delegate);
+
+    if (ret != 0 || delegate == nullptr)
+    {
+        return InitializeResult::GetRuntimeDelegateError;
+    }
+
+    /// `void *` -> `load_assembly_and_get_function_pointer_fn`, undocumented???
+    auto load_assembly_fptr = reinterpret_cast<load_assembly_fn>(delegate);
+
+    typedef void (CORECLR_DELEGATE_CALLTYPE* custom_entry_point_fn)();
+
+    ret = load_assembly_fptr(assembly_path, nullptr, nullptr);
+
+    if (ret != 0)
+    {
+        return InitializeResult::EntryPointError;
+    }
+
+    hostfxr_close_fptr(ctx);
+}
+
 std::string InitResultToStr(InitializeResult result)
 {
     std::string data;
@@ -197,9 +262,9 @@ DWORD WINAPI dllThread(HMODULE hModule)
     std::string exePath = GetExecutableDirectory();
 
     std::string helperPath = exePath.substr(0, exePath.find("common")) +
-        "workshop\\content\\799600\\2937901869\\leave_this_folder_here\\";
+        "workshop\\content\\799600\\2937901869\\"; // TODO UPDATE
 
-    std::string configPath = exePath + "\\eml_config.ini";
+    std::string configPath = exePath + "\\eml_config_new.ini"; // appended "_new" to avoid conflicts with the old mod, which would override the new workshop id of the helperPath
     std::string logPath = exePath + "\\eml_log.txt";
     std::string modsPath = exePath + "\\eml_mods.ini";
     std::string lockPath = modsPath + ".lock";
@@ -216,9 +281,9 @@ DWORD WINAPI dllThread(HMODULE hModule)
 		std::filesystem::remove(logPath);
 	}
 
+    //load path from config file if it exists
     if (std::filesystem::exists(configPath))
     {
-        //load path from config file if it exists
         std::ifstream file(configPath);
 
         std::string token = "EML_HelperPath";
@@ -231,24 +296,18 @@ DWORD WINAPI dllThread(HMODULE hModule)
             }
         }
     }
-    else
-    {
-        std::ofstream file(configPath, std::ios::trunc);
-
-        if (file.is_open())
-        {
-            file << "EML_HelperPath=" << helperPath << std::endl;
-            file.close();
-        }
-    }
 
     std::string s_config = helperPath + "EML_Helper.runtimeconfig.json";
     std::wstring t_config = std::wstring(s_config.begin(), s_config.end());
     const char_t* config = t_config.c_str();
 
-    std::string s_dll = helperPath + "EML_Helper.dll";
-    std::wstring t_dll = std::wstring(s_dll.begin(), s_dll.end());
-    const char_t* dll = t_dll.c_str();
+    std::string s_helper_dll = helperPath + "EML_Helper.dll";
+    std::wstring t_helper_dll = std::wstring(s_helper_dll.begin(), s_helper_dll.end());
+    const char_t* helper_dll = t_helper_dll.c_str();
+
+    std::string s_harmony_dll = helperPath + "0Harmony.dll";
+    std::wstring t_harmony_dll = std::wstring(s_harmony_dll.begin(), s_harmony_dll.end());
+    const char_t* harmony_dll = t_harmony_dll.c_str();
 
     const char_t* typeName = L"EML_Helper.Main, EML_Helper";
     const char_t* methodName = L"InitializePatches";
@@ -256,9 +315,9 @@ DWORD WINAPI dllThread(HMODULE hModule)
     //Give the game time to initialize
     Sleep(1000);
 
-    if (!std::filesystem::exists(s_dll))
+    if (!std::filesystem::exists(s_helper_dll))
     {
-        LogLine(logPath, "EML_Helper.dll not found! Tried loading from: " + s_dll);
+        LogLine(logPath, "EML_Helper.dll not found! Tried loading from: " + s_helper_dll);
         MessageBoxA(NULL, "EML_Helper.dll not found!\nCheck eml_config.ini in your Cosmoteer Install directory", "Error", MB_OK | MB_ICONERROR);
 		return 0;
     }
@@ -287,9 +346,14 @@ DWORD WINAPI dllThread(HMODULE hModule)
         return dwExit;
     }
 
+    // Load Harmony
+    LogLine(logPath, "Loading 0Harmony.dll: ", false);
+    InitializeResult result = LoadHarmony(config, harmony_dll);
+    LogLine(logPath, InitResultToStr(result));
+
     //Loads helper dll
     LogLine(logPath, "Loading EML_Helper.dll: ", false);
-    InitializeResult result = LoadDll(config, dll, typeName, methodName);
+    result = LoadDll(config, helper_dll, typeName, methodName);
     LogLine(logPath, InitResultToStr(result));
 
     //Wait for mod list
@@ -311,7 +375,6 @@ DWORD WINAPI dllThread(HMODULE hModule)
                 LogLine(logPath, p.path().string() + "\n-> Found .dll to load", true);
                 mods_to_load.push_back(p.path().string());
             }
-            
         }
     }
     else {

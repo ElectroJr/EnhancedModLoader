@@ -1,4 +1,6 @@
-This is a fork of [C0dingschmuser's EnhancedModLoader](https://github.com/C0dingschmuser/EnhancedModLoader), updated to work with the new versions of cosmoteer that use .net 9
+This is a fork of [C0dingschmuser's EnhancedModLoader](https://github.com/C0dingschmuser/EnhancedModLoader), updated to work with the new versions of cosmoteer that use dotnet 9. Additionally, this will now also include and load Andreas Pardeike's [Harmony patching library](https://github.com/pardeike/Harmony) v2.3.5.
+
+If anyone needs to fork it again in future, note that the steam workshop mod ID is hard coded in `helperPath` in `dllmain.cpp`.
 
 # EnhancedModLoader for Cosmoteer
 ### Automatically loads c# mod dlls from Steam Workshop Mods - Integrates with ingame mod manager.
