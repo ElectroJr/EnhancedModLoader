@@ -145,9 +145,11 @@ InitializeResult LoadDll(const char_t* runtime_config_path, const char_t* assemb
 }
 
 // Variant of LoadDll that exists specifically to load the harmony dll
-// I just want to ship a single harmony dll with the EML instead having each mod ship their own, and my shitty solution 
-// to resolving the harmony dll path is to just have it loaded when EML loads.
-// Though TBH I could probably have made this part of the EML_helper.dll. I.e., load from dotnet not here.
+// I just want to ship a single harmony dll with the EML instead of needing each mod ship their own. I'm not all that
+// familiar with loading dotnet from native code, but from what I can tell the only way to do that is via
+// load_assembly(). I.e., it can't be done implicitly load_assembly_and_get_function_pointer() when loading the
+// EML_helper assembly, as that loads assemblies into their own isolated AssemblyLoadContext? Again, I'm not familiar
+// enough with any of this to be sure, but the current implementation works so whatever...
 InitializeResult LoadHarmony(const char_t* runtime_config_path, const char_t* assembly_path)
 {
     /// Get module base address
