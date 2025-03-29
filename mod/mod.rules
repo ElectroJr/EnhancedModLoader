@@ -4,7 +4,7 @@
 ID = electrosr.eml
 
 // You must give a human-readable name for your mod. This is what will be shown in the user interface.
-Name = "Enhanced Mod Loader"
+Name = "Enhanced Mod Loader (.NET 9)"
 
 // The version of the mod that will be shown in the user interface. This is optional.
 Version = 1.1.0
@@ -29,7 +29,7 @@ Author = "ElectroSR"
 Logo = "logo.png"
 
 // A longer description of what your mod does to the game. This is optional.
-Description = "This Mod allows you to use powerful DLL Mods which can alter the entire game. This is a fork of C0dingschmuser's loader that has been updated to support .net9"
+Description = "This Mod allows you to use powerful DLL Mods which can alter the entire game. This is a fork of C0dingschmuser's loader that has been updated to support .NET 9"
 
 // The primary way mods modify the game is through "actions".
 //

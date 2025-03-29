@@ -9,10 +9,10 @@ If anyone needs to fork it again in future, note that the steam workshop mod ID 
 :----------------------------------------------------------: |
 
 ### --- Installation ---
-1. Subscribe to this Mod on the [Steam Workshop](https://steamcommunity.com/sharedfiles/filedetails/?id=TODO)  
+1. Subscribe to this Mod on the [Steam Workshop](https://steamcommunity.com/sharedfiles/filedetails/?id=3453984043)  
 2. Navigate to your Cosmoteer Workshop directory.  
-   Usually it's ```C:\Program Files (x86)\Steam\steamapps\workshop\content\799600\TODO\```  
-   Note: ```799600 is the ID for Cosmoteer, TODO is the ID for this Mod```
+   Usually it's ```C:\Program Files (x86)\Steam\steamapps\workshop\content\799600\3453984043\```  
+   Note: ```799600 is the ID for Cosmoteer, 3453984043 is the ID for this Mod```
 3. Run ```Installer.bat``` or install it manually by copying AVRT.dll from the Mod Folder to your Cosmoteer "Bin" path. This is the path where the Cosmoteer.exe lies.  
    Example: ```C:\Program Files (x86)\Steam\steamapps\common\Cosmoteer\Bin\```
 4. You're good to go! Now you can just subscribe to any Workshop EML Mod and it will load automatically  

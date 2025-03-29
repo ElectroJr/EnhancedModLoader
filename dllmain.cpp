@@ -262,7 +262,7 @@ DWORD WINAPI dllThread(HMODULE hModule)
     std::string exePath = GetExecutableDirectory();
 
     std::string helperPath = exePath.substr(0, exePath.find("common")) +
-        "workshop\\content\\799600\\2937901869\\"; // TODO UPDATE
+        "workshop\\content\\799600\\3453984043\\";
 
     std::string configPath = exePath + "\\eml_config_new.ini"; // appended "_new" to avoid conflicts with the old mod, which would override the new workshop id of the helperPath
     std::string logPath = exePath + "\\eml_log.txt";
@@ -281,7 +281,8 @@ DWORD WINAPI dllThread(HMODULE hModule)
 		std::filesystem::remove(logPath);
 	}
 
-    //load path from config file if it exists
+    //load path from config file if it exists.
+    //i.e., allow people to override the default helperPath that is based on the steam workshop id
     if (std::filesystem::exists(configPath))
     {
         std::ifstream file(configPath);
