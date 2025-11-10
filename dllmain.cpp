@@ -283,10 +283,14 @@ DWORD WINAPI dllThread(HMODULE hModule)
 		std::filesystem::remove(logPath);
 	}
 
-    //load path from config file if it exists.
-    //i.e., allow people to override the default helperPath that is based on the steam workshop id
+    // Load path to EML_Helper.dll from config file if it exists.
+    // Otherwise, it defaults to trying to use the steam workshop path obtained earlier.
+    // This is mainly useful when testing the EML mod locally before uploading it to steam.
+    // E.g., I have a `eml_config_new.ini` text file next to the executable that just contains:
+    // EML_HelperPath C:\Users\ElectroSR\Saved Games\Cosmoteer\76561197970642754\Mods\EML\ 
     if (std::filesystem::exists(configPath))
     {
+        LogLine(logPath, "Loading EML config: " + configPath);
         std::ifstream file(configPath);
 
         std::string token = "EML_HelperPath";
@@ -296,6 +300,7 @@ DWORD WINAPI dllThread(HMODULE hModule)
             if (line.find(token) != std::string::npos)
             {
                 helperPath = line.substr(line.find(token) + token.length() + 1);
+                LogLine(logPath, "Overriding EML helper path: " + helperPath);
             }
         }
     }
@@ -321,7 +326,7 @@ DWORD WINAPI dllThread(HMODULE hModule)
     if (!std::filesystem::exists(s_helper_dll))
     {
         LogLine(logPath, "EML_Helper.dll not found! Tried loading from: " + s_helper_dll);
-        MessageBoxA(NULL, "EML_Helper.dll not found!\nCheck eml_config.ini in your Cosmoteer Install directory", "Error", MB_OK | MB_ICONERROR);
+        MessageBoxA(NULL, "EML_Helper.dll not found!\nCheck eml_config_new.ini in your Cosmoteer Install directory", "Error", MB_OK | MB_ICONERROR);
 		return 0;
     }
 
