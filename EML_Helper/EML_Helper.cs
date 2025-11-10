@@ -121,7 +121,7 @@ namespace EML_Helper
                             }
                         }
 
-                        if (!contains && !file.Contains("EML_Helper.dll") && !file.Contains("AVRT.dll"))
+                        if (!contains && !file.Contains("EML_Helper.dll") && !file.Contains("AVRT.dll") && !file.Contains("0Harmony.dll"))
                         {
                             Main.modDllPaths.Add(file);
                         }
