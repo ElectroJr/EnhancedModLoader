@@ -1,7 +1,7 @@
 ID = electrosr.eml
-Name = "Enhanced Mod Loader (.NET 9)"
-Version = 1.1.0
-CompatibleGameVersions = ["0.30.2a"]
+Name = "Enhanced Mod Loader (.NET 10)"
+Version = 1.2.0
+CompatibleGameVersions = ["0.30.5"]
 ModifiesGameplay = false
 Author = "ElectroSR"
 Logo = "logo.png"
