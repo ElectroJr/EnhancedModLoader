@@ -75,6 +75,8 @@ enum class InitializeResult : uint32_t
     Success,
     HostFxrLoadError,
     InitializeRuntimeConfigError,
+    InvalidRuntimeConfigFile,
+    HostIncompatible,
     GetRuntimeDelegateError,
     EntryPointError,
 };
@@ -107,11 +109,17 @@ InitializeResult LoadDll(const char_t* runtime_config_path, const char_t* assemb
     hostfxr_handle ctx = nullptr;
     int rc = hostfxr_initialize_for_runtime_config_fptr(runtime_config_path, nullptr, &ctx);
 
-    /// Success_HostAlreadyInitialized = 0x00000001
+    /// rc = 0x00000001 -> Success_HostAlreadyInitialized
     /// @see https://github.com/dotnet/runtime/blob/main/docs/design/features/host-error-codes.md
     if (rc != 1 || ctx == nullptr)
     {
         hostfxr_close_fptr(ctx);
+
+        if (rc == 0x800080a5)
+            return InitializeResult::HostIncompatible;
+        if (rc == 0x80008093)
+            return InitializeResult::InvalidRuntimeConfigFile;
+
         return InitializeResult::InitializeRuntimeConfigError;
     }
 
@@ -142,6 +150,7 @@ InitializeResult LoadDll(const char_t* runtime_config_path, const char_t* assemb
     custom();
 
     hostfxr_close_fptr(ctx);
+    return InitializeResult::Success;
 }
 
 // Variant of LoadDll that exists specifically to load the harmony dll
@@ -178,11 +187,17 @@ InitializeResult LoadHarmony(const char_t* runtime_config_path, const char_t* as
     hostfxr_handle ctx = nullptr;
     int rc = hostfxr_initialize_for_runtime_config_fptr(runtime_config_path, nullptr, &ctx);
 
-    /// Success_HostAlreadyInitialized = 0x00000001
+    /// rc = 0x00000001 -> Success_HostAlreadyInitialized
     /// @see https://github.com/dotnet/runtime/blob/main/docs/design/features/host-error-codes.md
     if (rc != 1 || ctx == nullptr)
     {
         hostfxr_close_fptr(ctx);
+
+        if (rc == 0x800080a5)
+            return InitializeResult::HostIncompatible;
+        if (rc == 0x80008093)
+            return InitializeResult::InvalidRuntimeConfigFile;
+
         return InitializeResult::InitializeRuntimeConfigError;
     }
 
@@ -209,6 +224,7 @@ InitializeResult LoadHarmony(const char_t* runtime_config_path, const char_t* as
     }
 
     hostfxr_close_fptr(ctx);
+    return InitializeResult::Success;
 }
 
 std::string InitResultToStr(InitializeResult result)
@@ -343,15 +359,24 @@ DWORD WINAPI dllThread(HMODULE hModule)
     std::ifstream f_c_config(cosmoteerConfigPath);
     std::ifstream f_m_config(s_config);
 
-    json j_c_config = json::parse(f_c_config)["runtimeOptions"]["tfm"];
-    json j_m_config = json::parse(f_m_config)["runtimeOptions"]["tfm"];
+    json j_c_config = json::parse(f_c_config)["runtimeOptions"];
+    json j_m_config = json::parse(f_m_config)["runtimeOptions"];
 
-    if (j_c_config != j_m_config)
+    json major = json::parse("\"Major\"");
+    json j_c_config_tfm = j_c_config["tfm"];
+    json j_m_config_tfm = j_m_config["tfm"];
+
+    if (j_c_config_tfm != j_m_config)
     {
-        LogLine(logPath, "Version mismatch: Cosmoteer uses " + j_c_config.dump() + " but EML uses " + j_m_config.dump());
-        LogLine(logPath, "Cannot load Mods. Wait for an Update and try again later");
-        MessageBoxA(NULL, ".NET Version mismatch between Cosmoteer and EML!\nMods cannot load, wait for an Update.\nCheck Log in Bin Folder for more Information", "Error", MB_OK | MB_ICONERROR);
-        return dwExit;
+        LogLine(logPath, "Version mismatch: Cosmoteer uses " + j_c_config_tfm.dump() + " but EML uses " + j_m_config_tfm.dump());
+        if (j_m_config["rollForward"] != major)
+        {
+            LogLine(logPath, "Cannot load Mods. Wait for an Update and try again later");
+            MessageBoxA(NULL, ".NET Version mismatch between Cosmoteer and EML!\nMods cannot load, wait for an Update.\nCheck Log in Bin Folder for more Information", "Error", MB_OK | MB_ICONERROR);
+            return dwExit;
+        }
+
+        LogLine(logPath, "Attempting to use roll-forward, but this might not work if harmony needs updating.");
     }
 
     // Load Harmony
@@ -359,10 +384,34 @@ DWORD WINAPI dllThread(HMODULE hModule)
     InitializeResult result = LoadHarmony(config, harmony_dll);
     LogLine(logPath, InitResultToStr(result));
 
+    if (result != InitializeResult::Success)
+    {
+        LogLine(logPath, "Failed to load harmonly dll!");
+        if (result == InitializeResult::InvalidRuntimeConfigFile)
+            MessageBoxA(NULL, "Failed to load harmony, runtime config is invalid?", "Error", MB_OK | MB_ICONERROR);
+        else if (result == InitializeResult::HostIncompatible)
+            MessageBoxA(NULL, "Failed to load harmony, runtime host is incompatible (mod is out of date?)", "Error", MB_OK | MB_ICONERROR);
+        else
+            MessageBoxA(NULL, "Failed to load harmony", "Error", MB_OK | MB_ICONERROR);
+        return dwExit;
+    }
+
     //Loads helper dll
     LogLine(logPath, "Loading EML_Helper.dll: ", false);
     result = LoadDll(config, helper_dll, typeName, methodName);
     LogLine(logPath, InitResultToStr(result));
+
+    if (result != InitializeResult::Success)
+    {
+        LogLine(logPath, "Failed to load EML_Helper dll!");
+        if (result == InitializeResult::InvalidRuntimeConfigFile)
+            MessageBoxA(NULL, "Failed to load EML_Helper, runtime config is invalid?", "Error", MB_OK | MB_ICONERROR);
+        else if (result == InitializeResult::HostIncompatible)
+            MessageBoxA(NULL, "Failed to load EML_Helper, runtime host is incompatible (mod is out of date?)", "Error", MB_OK | MB_ICONERROR);
+        else
+            MessageBoxA(NULL, "Failed to load EML_Helper", "Error", MB_OK | MB_ICONERROR);
+        return dwExit;
+    }
 
     //Wait for mod list
     while (!std::filesystem::exists(lockPath))
@@ -430,11 +479,12 @@ DWORD WINAPI dllThread(HMODULE hModule)
                 if (std::filesystem::exists(configPath))
                 {
 					std::ifstream f_dll_config(configPath);
-					json j_dll_config = json::parse(f_dll_config)["runtimeOptions"]["tfm"];
+                    json j_dll_config = json::parse(f_dll_config)["runtimeOptions"];
+					json j_dll_config_tfm = j_dll_config["tfm"];
 
-                    if (j_c_config != j_dll_config)
+                    if (j_c_config_tfm != j_dll_config_tfm && j_dll_config["rollForward"] != major)
                     {
-                        LogLine(logPath, "Error (Outdated: This mod uses " + j_dll_config.dump() + " but Cosmoteer uses " + j_c_config.dump() + ")");
+                        LogLine(logPath, "Error (Outdated: This mod uses " + j_dll_config_tfm.dump() + " and does not have roll-forward enabled, but Cosmoteer uses " + j_c_config_tfm.dump() + ")");
                     }
                     else
                     {
