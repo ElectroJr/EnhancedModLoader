@@ -366,7 +366,7 @@ DWORD WINAPI dllThread(HMODULE hModule)
     json j_c_config_tfm = j_c_config["tfm"];
     json j_m_config_tfm = j_m_config["tfm"];
 
-    if (j_c_config_tfm != j_m_config)
+    if (j_c_config_tfm != j_m_config_tfm)
     {
         LogLine(logPath, "Version mismatch: Cosmoteer uses " + j_c_config_tfm.dump() + " but EML uses " + j_m_config_tfm.dump());
         if (j_m_config["rollForward"] != major)
